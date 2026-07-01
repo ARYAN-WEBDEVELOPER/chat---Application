@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { socket } from "./socket";
 
+import JoinScreen from "./components/JoinScreen";
+import Navbar from "./components/Navbar";
+import ChatBox from "./components/ChatBox";
+import ChatInput from "./components/ChatInput";
+import TypingIndicator from "./components/TypingIndicator";
+
 function App() {
   const [username, setUsername] = useState("");
   const [room, setRoom] = useState("General");
@@ -11,32 +17,30 @@ function App() {
   const [typingUser, setTypingUser] = useState("");
 
   useEffect(() => {
-  socket.on("receive_message", (data) => {
-    setMessages((prev) => [...prev, data]);
-  });
+    socket.connect();
 
-  socket.on("show_typing", (username) => {
-    setTypingUser(`${username} is typing...`);
+    socket.on("receive_message", (data) => {
+      setMessages((prev) => [...prev, data]);
+    });
 
-    const timer = setTimeout(() => {
-      setTypingUser("");
-    }, 1500);
+    socket.on("show_typing", (username) => {
+      setTypingUser(`${username} is typing...`);
 
-    return () => clearTimeout(timer);
-  });
+      setTimeout(() => {
+        setTypingUser("");
+      }, 1500);
+    });
 
-  return () => {
-    socket.off("receive_message");
-    socket.off("show_typing");
-    socket.disconnect();
-  };
-}, []);  
+    return () => {
+      socket.off("receive_message");
+      socket.off("show_typing");
+    };
+  }, []);
 
   const joinRoom = () => {
     if (!username.trim()) return;
 
     socket.emit("join_room", room);
-
     setJoined(true);
   };
 
@@ -50,96 +54,55 @@ function App() {
     };
 
     socket.emit("send_message", data);
+    setMessage("");
+  };
 
+  const leaveChat = () => {
+    setJoined(false);
+    setMessages([]);
+    setTypingUser("");
     setMessage("");
   };
 
   if (!joined) {
     return (
-      <div
-        style={{
-          padding: 40,
-          textAlign: "center",
-        }}
-      >
-        <h1>Real-Time Chat</h1>
-
-        <input
-          placeholder="Username"
-          value={username}
-          onChange={(e) =>
-            setUsername(e.target.value)
-          }
-        />
-
-        <br />
-        <br />
-
-        <select
-          value={room}
-          onChange={(e) =>
-            setRoom(e.target.value)
-          }
-        >
-          <option>General</option>
-          <option>Tech Support</option>
-        </select>
-
-        <br />
-        <br />
-
-        <button onClick={joinRoom}>
-          Join Room
-        </button>
-      </div>
+      <JoinScreen
+        username={username}
+        setUsername={setUsername}
+        room={room}
+        setRoom={setRoom}
+        joinRoom={joinRoom}
+      />
     );
   }
 
   return (
-    <div
-      style={{
-        padding: 20,
-      }}
-    >
-      <h2>Welcome {username}</h2>
-
-      <h3>Room: {room}</h3>
-
-      <input
-        value={message}
-        placeholder="Message..."
-        onChange={(e) => {
-          setMessage(e.target.value);
-
-          socket.emit("typing", {
-            username,
-            room,
-          });
-        }}
+    <div className="app">
+      <Navbar
+        username={username}
+        room={room}
+        leaveChat={leaveChat}
       />
 
-      <button onClick={sendMessage}>
-        Send
-      </button>
+      <div className="chat-container">
+        <ChatBox
+          messages={messages}
+          currentUser={username}
+        />
 
-      <p
-        style={{
-          color: "gray",
-          fontStyle: "italic",
-        }}
-      >
-        {typingUser}
-      </p>
+        <TypingIndicator
+          typingUser={typingUser}
+        />
 
-      <hr />
-
-      {messages.map((msg, index) => (
-        <p key={index}>
-          <strong>[{msg.username}]</strong>:
-          {" "}
-          {msg.message}
-        </p>
-      ))}
+        <ChatInput
+          message={message}
+          setMessage={setMessage}
+          sendMessage={sendMessage}
+          username={username}
+          room={room}
+          socket={socket}
+        />
+      </div>
     </div>
   );
 }
