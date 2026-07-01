@@ -2,6 +2,8 @@
 
 A full-stack real-time chat application built using **React, Node.js, Express, and Socket.io**. The application enables users to communicate instantly through WebSockets, providing a seamless real-time messaging experience with room-based communication and typing indicators.
 
+Live : https://chat-application-teal-mu.vercel.app/
+
 ---
 
 ## 🚀 Features
@@ -169,7 +171,7 @@ http://localhost:5173
 
 ## 👨‍💻 Author
 
-Aryan NP
+Aryan 
 
 ---
 
